@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#0a0a0f"/>
+  <rect x="40" y="40" width="432" height="432" rx="76" fill="#12121a"/>
+
+  <!-- 상단 레드 액센트 바 -->
+  <rect x="80" y="80" width="352" height="6" rx="3" fill="#c8102e"/>
+
+  <!-- M 레터링 -->
+  <text
+    x="256" y="310"
+    font-family="'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="220"
+    font-weight="900"
+    fill="#ffffff"
+    text-anchor="middle"
+    letter-spacing="-8"
+  >M</text>
+
+  <!-- MAVIS 서브텍스트 -->
+  <text
+    x="256" y="390"
+    font-family="'Arial', 'Helvetica Neue', sans-serif"
+    font-size="52"
+    font-weight="700"
+    fill="#c8102e"
+    text-anchor="middle"
+    letter-spacing="18"
+  >MAVIS</text>
+
+  <!-- 하단 레드 액센트 바 -->
+  <rect x="80" y="426" width="352" height="6" rx="3" fill="#c8102e"/>
+</svg>

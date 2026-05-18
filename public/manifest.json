@@ -1,13 +1,19 @@
 {
-  "name": "PRECISION-Q",
-  "short_name": "PRECISION-Q",
-  "description": "정밀 품질 자동 보정 시스템",
+  "name": "MAVIS",
+  "short_name": "MAVIS",
+  "description": "Machining Assistant for Visual Inspection & Solution",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
   "orientation": "portrait",
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
