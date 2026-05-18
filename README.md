@@ -1,4 +1,4 @@
-# PRECISION-Q 배포 가이드
+# MAVIS 배포 가이드
 
 ## 1단계: GitHub에 올리기
 
@@ -6,12 +6,12 @@
 cd precision-q
 git init
 git add .
-git commit -m "PRECISION-Q v1.0"
+git commit -m "MAVIS v1.0"
 ```
 
 GitHub에서 새 리포지토리 만들고:
 ```bash
-git remote add origin https://github.com/너의아이디/precision-q.git
+git remote add origin https://github.com/너의아이디/MAVIS.git
 git branch -M main
 git push -u origin main
 ```
@@ -23,7 +23,7 @@ git push -u origin main
 3. **Framework**: Vite 자동 감지됨
 4. **"Deploy"** 클릭 → 끝!
 
-배포 완료되면 `https://precision-q.vercel.app` 같은 URL이 나옴.
+배포 완료되면 `https://MAVIS.vercel.app` 같은 URL이 나옴.
 
 ## 3단계: 휴대폰에서 앱처럼 설치
 
@@ -40,7 +40,7 @@ git push -u origin main
 
 ## 참고사항
 
-- **OCR 기능**: Claude API를 사용합니다. Vercel 환경에서 API 키 없이도 동작하지만, 실제 OCR 호출 시 Claude API 키가 필요합니다.
+- **OCR 기능**: google Gemini API를 사용합니다. Vercel 환경에서 API 키 없이도 동작하지만, 실제 OCR 호출 시 Claude API 키가 필요합니다.
 - **데모 모드**: API 키 없어도 "데모 데이터로 테스트" 버튼으로 전체 플로우 확인 가능합니다.
 - **분석 이력**: localStorage에 저장되므로 기기별로 유지됩니다.
 - **PWA**: 오프라인에서도 캐시된 페이지는 접근 가능합니다.
