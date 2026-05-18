@@ -72,7 +72,6 @@ const ENGINE_TYPES = [
   { id: "gamma", label: "감마", models: ["감마 1.4 T-GDI", "감마 1.6 MPI"] },
 ];
 
-const EQUIPMENT_LIST = ["OP11A", "OP11B", "OP11C", "OP11D", "OP11E", "OP12A", "OP12B"];
 
 // ============================================================
 // 2. 보정값 산출
@@ -167,14 +166,13 @@ export default function PrecisionQ() {
   const [engineType, setEngineType] = useState(null);
   const [engineModel, setEngineModel] = useState(null);
   const [equipment, setEquipment] = useState(null);
+  const [equipmentGroup, setEquipmentGroup] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [ocrResult, setOcrResult] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState(null);
   const [corrections, setCorrections] = useState(null);
-  const [applied, setApplied] = useState(false);
-  const [applyLoading, setApplyLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [logs, setLogs] = useState([]);
   const [animateIn, setAnimateIn] = useState(true);
@@ -254,13 +252,8 @@ export default function PrecisionQ() {
 
   const calculateCorrections = () => {
     if (!ocrResult?.rows) return;
-    setCorrections(computeCorrections(ocrResult.rows, engineType?.id));
-    setApplied(false); goToStep(3);
-  };
-
-  const applyCorrections = async () => {
-    setApplyLoading(true);
-    await new Promise(r => setTimeout(r, 2200));
+    const corr = computeCorrections(ocrResult.rows, engineType?.id);
+    setCorrections(corr);
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       ts: new Date().toISOString(),
@@ -268,17 +261,17 @@ export default function PrecisionQ() {
       품명: ocrResult?.품명 || engineModel,
       total: ocrResult?.rows?.length || 0,
       ng: ocrResult?.rows?.filter(r => r.ngOk === "NG").length || 0,
-      corr: corrections.map(c => ({ pt: c.point, tp: c.type, X: c.X, Y: c.Y, Z: c.Z, prg: c.program, tl: c.tool, cd: c.coord })),
-      status: "applied",
+      corr: corr.map(c => ({ pt: c.point, tp: c.type, X: c.X, Y: c.Y, Z: c.Z, prg: c.program, tl: c.tool, cd: c.coord })),
+      status: "calculated",
     };
     saveLogs([entry, ...logs].slice(0, 100));
-    setApplied(true); setApplyLoading(false);
+    goToStep(3);
   };
 
   const reset = () => {
-    setStep(0); setEngineType(null); setEngineModel(null); setEquipment(null);
+    setStep(0); setEngineType(null); setEngineModel(null); setEquipment(null); setEquipmentGroup(null);
     setImageFile(null); setImagePreview(null); setOcrResult(null); setOcrError(null);
-    setCorrections(null); setApplied(false); setApplyLoading(false); setAnimateIn(true);
+    setCorrections(null); setAnimateIn(true);
   };
 
   const totalRows = ocrResult?.rows?.length || 0;
@@ -314,9 +307,7 @@ export default function PrecisionQ() {
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <span style={{ ...badge, background: C.ngDim, color: C.ng }}>NG {log.ng}</span>
-                    <span style={{ ...badge, background: log.status === "applied" ? C.okDim : C.goldDim, color: log.status === "applied" ? C.ok : C.gold }}>
-                      {log.status === "applied" ? "변환완료" : "미적용"}
-                    </span>
+                    <span style={{ ...badge, background: C.okDim, color: C.ok }}>보정값산출</span>
                   </div>
                 </div>
                 {log.corr?.length > 0 && (
@@ -367,7 +358,7 @@ export default function PrecisionQ() {
 
       {/* 스텝바 */}
       <div style={{ padding: "14px 20px", display: "flex", gap: 4, alignItems: "center" }}>
-        {["엔진 선택","성적서 업로드","데이터 분석","보정 · 변환"].map((l,i) => (
+        {["엔진 선택","성적서 업로드","데이터 분석","보정값 산출"].map((l,i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
             <div style={{ width: 24, height: 24, borderRadius: "50%", background: i <= step ? C.accent : C.surfaceAlt, border: `2px solid ${i <= step ? C.accent : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i <= step ? "#fff" : C.textMuted, transition: "all 0.3s" }}>{i+1}</div>
             <span style={{ fontSize: 11, color: i <= step ? C.text : C.textMuted, fontWeight: i === step ? 600 : 400, display: i === step ? "block" : "none" }}>{l}</span>
@@ -396,8 +387,37 @@ export default function PrecisionQ() {
           </div>}
           {engineModel && <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>설비</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-              {EQUIPMENT_LIST.map(eq => <Btn key={eq} active={equipment===eq} onClick={() => setEquipment(eq)} compact>{eq}</Btn>)}
+            <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+              {/* 상위: OP 번호 */}
+              <div style={{ padding: "10px 12px", background: C.surfaceAlt, borderBottom: equipmentGroup ? `1px solid ${C.border}` : "none" }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>공정</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 6 }}>
+                  {["OP11","OP12","OP13","OP14","OP15","OP16"].map(g => (
+                    <button key={g} onClick={() => { setEquipmentGroup(g); setEquipment(null); }} style={{
+                      padding: "8px 4px", borderRadius: 6, border: `1px solid ${equipmentGroup===g ? C.accent : C.border}`,
+                      background: equipmentGroup===g ? C.accentGlow : C.surface,
+                      color: equipmentGroup===g ? C.text : C.textDim,
+                      fontSize: 12, fontWeight: equipmentGroup===g ? 700 : 500,
+                    }}>{g}</button>
+                  ))}
+                </div>
+              </div>
+              {/* 하위: A~E */}
+              {equipmentGroup && (
+                <div style={{ padding: "10px 12px", background: C.bg }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>라인 <span style={{ color: C.accent }}>{equipmentGroup}</span></div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6 }}>
+                    {["A","B","C","D","E"].map(l => (
+                      <button key={l} onClick={() => setEquipment(equipmentGroup+l)} style={{
+                        padding: "10px 4px", borderRadius: 6, border: `1px solid ${equipment===equipmentGroup+l ? C.accent : C.borderLight}`,
+                        background: equipment===equipmentGroup+l ? C.accentGlow : C.surfaceAlt,
+                        color: equipment===equipmentGroup+l ? C.text : C.textDim,
+                        fontSize: 14, fontWeight: equipment===equipmentGroup+l ? 700 : 500,
+                      }}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>}
           {equipment && <button onClick={() => goToStep(1)} style={primaryBtn}>다음 →</button>}
@@ -519,30 +539,10 @@ export default function PrecisionQ() {
             </div>
           ))}
 
-          {/* 변환 실행 영역 */}
-          <div style={{ marginTop: 20, padding: 20, borderRadius: 12, background: C.surface, border: `1px solid ${applied ? `${C.ok}44` : C.border}`, transition: "all 0.4s" }}>
-            {!applied ? (<>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>⚡ 프로그램 변환 실행</div>
-              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 16 }}>산출된 보정값을 MCC 가공 프로그램에 적용합니다. {corrections.length}건의 좌표 수정이 실행됩니다.</div>
-              <button onClick={applyCorrections} disabled={applyLoading} style={{ ...primaryBtn, background: applyLoading ? C.surfaceAlt : `linear-gradient(135deg, ${C.ok}, #16a34a)`, boxShadow: applyLoading ? "none" : `0 4px 20px ${C.ok}40` }}>
-                {applyLoading ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Spinner />변환 중...</span> : "⚡ 변환 실행"}
-              </button>
-            </>) : (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.okDim, border: `2px solid ${C.ok}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 28, animation: "popIn 0.4s ease" }}>✓</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: C.ok, marginBottom: 4 }}>변환 완료</div>
-                <div style={{ fontSize: 13, color: C.textDim, marginBottom: 4 }}>{corrections.length}건의 보정값이 적용되었습니다</div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 20 }}>분석 이력에 자동 저장됨 · {new Date().toLocaleString("ko-KR")}</div>
-                <button onClick={reset} style={primaryBtn}>🏠 새 분석 시작</button>
-                <button onClick={() => setShowHistory(true)} style={{ ...secBtn, marginTop: 8 }}>📋 분석 이력 보기</button>
-              </div>
-            )}
-          </div>
-
-          {!applied && <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
             <button onClick={() => goToStep(2)} style={{ ...secBtn, flex: 1 }}>← 데이터 확인</button>
             <button onClick={reset} style={{ ...secBtn, flex: 1, color: C.textMuted }}>🏠 홈으로</button>
-          </div>}
+          </div>
         </div>)}
 
       </main>
